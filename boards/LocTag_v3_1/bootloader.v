@@ -1,4 +1,4 @@
-module loctag (
+module bootloader (
   input  pin_clk,
 
   inout  pin_usb_p,
