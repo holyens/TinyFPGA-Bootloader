@@ -14,20 +14,17 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-PROJ = bootloader
+PROJ = factory_bootloader
 
 PIN_DEF = pins.pcf
 DEVICE = up5k
 PKG = sg48
-SEED ?= 12345678
+SEED ?= 20210106
 
-#all: $(PROJ).rpt multiboot.bin
-all: multiboot.bin
+all: factory_bootloader.bin
 
 %.json: %.v ../../common/*.v 
-	yosys -q -p 'synth_ice40 -top $(PROJ) -json $@' $^
-%.blif: %.v ../../common/*.v 
-	yosys -q -p 'synth_ice40 -top $(PROJ) -blif $@' $^
+	yosys -q -p 'synth_ice40 -top $(basename $@) -json $@' $^
 
 %.asc: $(PIN_DEF) %.json
 	nextpnr-ice40 \
@@ -38,32 +35,27 @@ all: multiboot.bin
 		--pcf $(PIN_DEF) \
 		--asc $@ \
 
-no-%.asc: $(PIN_DEF) %.blif
-	arachne-pnr -d 5k -P $(PKG) -o $@ -p $^
-
 %.bin: %.asc
 	icepack $< $@
 
-multiboot.bin: bootloader.bin
-	cp bootloader.bin bootloader_0.bin 
-	cp bootloader.bin bootloader_1.bin 
-	icemulti -v -o multiboot.bin -a16 -p0 bootloader_0.bin bootloader_1.bin
+factory_bootloader.bin: bootloader.bin hardware_test.bin
+	icemulti -v -o factory_bootloader.bin -a16 -p0 bootloader.bin hardware_test.bin
 
 %.rpt: %.asc
 	icetime -d $(DEVICE) -mtr $@ $<
 
-%_syn.v: %.blif
-	yosys -p 'read_blif -wideports $^; write_verilog $@'
+%_syn.v: %.json
+	yosys -p 'read_json -wideports $^; write_verilog $@'
 
-prog: multiboot.bin
+prog: factory_bootloader.bin
 	iceprog $<
 
-sudo-prog: multiboot.bin
+sudo-prog: factory_bootloader.bin
 	@echo 'Executing prog as root!!!'
 	sudo iceprog $<
 
 clean:
-	rm -f $(PROJ).blif $(PROJ).asc $(PROJ).rpt $(PROJ).bin $(PROJ)_0.bin $(PROJ)_1.bin multiboot.bin
+	rm -f *.asc *.rpt *.bin *.log bootloader.json hardware_test.json 
 
 .SECONDARY:
 .PHONY: all prog clean

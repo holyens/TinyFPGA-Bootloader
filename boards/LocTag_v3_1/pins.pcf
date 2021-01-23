@@ -44,10 +44,10 @@ set_io -nowarn  pin_flash_so   14   # IOB_32A_SPI_SO
 set_io -nowarn  pin_flash_wp   13   # IOB_24A
 
 # User input
-set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key[0]     9    # IOB_16A
-set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key[1]     10   # IOB_18A
-set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key[2]     11   # IOB_20A
-set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key[3]     12   # IOB_22A
+set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key_1     9    # IOB_16A
+set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key_2     10   # IOB_18A
+set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key_3     11   # IOB_20A
+set_io -nowarn -pullup yes -pullup_resistor 10K  pin_key_4     12   # IOB_22A
 
 # Output
 set_io -nowarn  pin_led        6    # IOB_13B
