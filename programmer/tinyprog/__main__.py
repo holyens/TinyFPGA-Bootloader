@@ -258,7 +258,8 @@ def main():
         "--device",
         type=str,
         default="1d50:6130",
-        help="device id (vendor:product); default is (1d50:6130)")
+        help="device id (vendor:product); default is (1d50:6130). See "
+        "http://wiki.openmoko.org/wiki/USB_Product_IDs")
     parser.add_argument(
         "-a",
         "--addr",
