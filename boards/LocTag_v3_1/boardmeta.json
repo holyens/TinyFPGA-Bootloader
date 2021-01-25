@@ -1,6 +1,6 @@
 {"boardmeta":{
   "name": "LocTag",
   "fpga": "ice40up5k-sg48",
-  "hver": "3.1",
-  "serial": 201231
+  "hver": "3.1.1",
+  "serial": 20123100
 }}

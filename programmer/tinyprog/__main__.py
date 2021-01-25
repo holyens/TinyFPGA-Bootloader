@@ -231,6 +231,12 @@ def main():
         "--list",
         action="store_true",
         help="list connected and active FPGA boards")
+
+    parser.add_argument(
+        "-r",
+        "--read",
+        type=str,
+        help="read flash by special address range: <start>-<end+1>")
     parser.add_argument(
         "-p",
         "--program",
@@ -312,8 +318,10 @@ try using libusb to connect to boards without a serial driver attached"""
             for port in active_boards:
                 with port:
                     p = TinyProg(port)
+                    jid = p.read_id()
                     m = p.meta.root
                     m["port"] = str(port)
+                    m["jid"] = '{:02x} {:02x} {:02x}'.format(jid[0],jid[1],jid[2])
                     meta.append(m)
             print(json.dumps(meta, indent=2))
             sys.exit(0)
@@ -376,6 +384,14 @@ try using libusb to connect to boards without a serial driver attached"""
             else:
                 for port in boards_needing_update:
                     perform_bootloader_update(port)
+
+        # read the flash memory
+        if (args.read is not None):
+            fpga = TinyProg(active_port)
+            [start_addr, end_addr] = args.read.split('-')
+            data = p.read(start_addr, end_addr-start_addr)
+            # hexdump(data)
+            sys.exit(0)
 
         # program the flash memory
         if (args.program is not None) or (
