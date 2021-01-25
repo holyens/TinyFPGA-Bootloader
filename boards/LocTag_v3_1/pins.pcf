@@ -39,8 +39,8 @@ set_io -nowarn  pin_adc_clk    47   # IOB_2A
 # Flash
 set_io -nowarn  pin_flash_cs   16   # IOB_35B_SPI_SS
 set_io -nowarn  pin_flash_clk  15   # IOB_34A_SPI_SCK
-set_io -nowarn  pin_flash_si   17   # IOB_33B_SPI_SI
-set_io -nowarn  pin_flash_so   14   # IOB_32A_SPI_SO
+set_io -nowarn  pin_flash_so   17   # IOB_33B_SPI_SI
+set_io -nowarn  pin_flash_si   14   # IOB_32A_SPI_SO
 set_io -nowarn  pin_flash_wp   13   # IOB_24A
 
 # User input
