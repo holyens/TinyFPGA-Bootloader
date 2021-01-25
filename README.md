@@ -1,3 +1,56 @@
+# The LocTag USB Bootloader (based on the TinyFPGA USB Bootloader)
+
+## 依赖的软件包 (Ubuntu)：
+1. Python (建议使用Python3，Python2也可)
+
+```bash
+apt-get install python3-dev python3-pip
+pip3 install -U setuptools wheel
+pip3 install -U pyrsistent spacy
+```
+
+2. 适用于iCE40系列FPGA的开源开发套件
+```bash
+pip install apio==0.4.0b5
+apio install system scons icestorm iverilog
+apio drivers --serial-enable
+```
+
+## 构建LocTag USB Bootloader
+```bash
+git clone git@github.com:holyens/TinyFPGA-Bootloader.git
+cd TinyFPGA-Bootloader/boards/LocTag_v3.1/
+make
+```
+
+## LocTag实验板程序烧写
+
+### FLASH芯片初次烧写
+FLASH芯片初次编程时需要使用专门的FLASH烧写工具，最好在将FLASH芯片焊到板子之前就进行烧写：
+1. 准备W25Q64FV FLASH芯片（SOIC-8封装）和FLASH编程器（这里使用在淘宝购买的“USB土豪金编程器”）及编程器附带的烧录软件。
+2. 将W25Q64FV FLASH芯片放置在编程器背面的SOIC位，注意引脚顺序。对准引脚后推荐用透明胶带将芯片固定在编程器上，在需要操作时用手按紧即可。
+3. 将编程器插入电脑，打开烧录软件，选择芯片型号，然后打开生成的factory_bootloader.bin。
+4. 依次执行擦除、烧写、校验。
+5. 全部成功后取下芯片，将芯片焊到板子上。factory_bootloader.bin。
+
+### 使用板载USB接口烧写
+烧写的factory_bootloader.bin中包含两组配置，得益于iCE40UP5K的WARM BOOT功能，。
+
+1. 查询信息/读取测试
+```
+sudo tinyprog -l       # 列出所有连接的设备
+sudo tinyprog -m       # 读取security pages的meta数据和FLASH芯片的JEDEC ID
+sudo tinyprog -r 0-16  # 读取[0x00,0x16)地址范围内的数据并打印
+```
+2. 烧录meta文件
+```
+sudo tinyprog --security ../boards/LocTag_v3_1/boardmeta.json -a 1
+sudo tinyprog --security ../boards/LocTag_v3_1/bootmeta.json -a 2
+```
+3. 烧录用户程序
+
+-------------------------------------------
+
 # The TinyFPGA USB Bootloader
 The TinyFPGA USB Bootloader is an open source IP for programming FPGAs without extra USB interface chips.  It implements a USB virtual serial port to SPI flash bridge on the FPGA fabric itself.  For FPGAs that support loading multiple configurations it is possible for the bootloader to be completely unloaded from the FPGA before the user configuration is loaded in.  
 

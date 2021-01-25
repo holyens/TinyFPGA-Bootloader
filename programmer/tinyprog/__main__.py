@@ -6,6 +6,7 @@ import sys
 import argparse
 import json
 import time
+import struct
 
 from six.moves.urllib.request import urlopen
 from six.moves import input
@@ -319,9 +320,11 @@ try using libusb to connect to boards without a serial driver attached"""
                 with port:
                     p = TinyProg(port)
                     jid = p.read_id()
-                    m = p.meta.root
+                    m = p.meta.root if p.meta.root else {}
                     m["port"] = str(port)
-                    m["jid"] = '{:02x} {:02x} {:02x}'.format(jid[0],jid[1],jid[2])
+                    m["flash-id"] = ' '.join(['%02x'%struct.unpack('<B',b) for b in jid])
+                    if p.meta.root is None:
+                        m["error"] = 'No metadata'
                     meta.append(m)
             print(json.dumps(meta, indent=2))
             sys.exit(0)
@@ -387,11 +390,13 @@ try using libusb to connect to boards without a serial driver attached"""
 
         # read the flash memory
         if (args.read is not None):
-            fpga = TinyProg(active_port)
-            [start_addr, end_addr] = args.read.split('-')
-            data = p.read(start_addr, end_addr-start_addr)
-            # hexdump(data)
-            sys.exit(0)
+            with active_port:
+                fpga = TinyProg(active_port)
+                [start_addr, end_addr] = args.read.split('-')
+                data = fpga.read(int(start_addr,16), int(end_addr,16)-int(start_addr,16))
+                print(' '.join(['%02x'%struct.unpack('<B',b) for b in data]))
+                # hexdump(data)
+                sys.exit(0)
 
         # program the flash memory
         if (args.program is not None) or (
