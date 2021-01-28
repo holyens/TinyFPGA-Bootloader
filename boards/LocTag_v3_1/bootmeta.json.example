@@ -1,7 +1,7 @@
 {"bootmeta" : {
 "bootloader": "Modified TinyFPGA USB Bootloader",
 "bver": "2.1.1",
-"update": "https://github.com/holyens/TinyFPGA-Bootloader",
+"update": "https://tjunet.top/update/loctag",
 "addrmap": {
 "bootloader": "0x000a0-0x20000",
 "userimage":  "0x20000-0x40000",
