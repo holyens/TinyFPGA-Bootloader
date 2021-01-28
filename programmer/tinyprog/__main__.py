@@ -322,7 +322,7 @@ try using libusb to connect to boards without a serial driver attached"""
                     jid = p.read_id()
                     m = p.meta.root if p.meta.root else {}
                     m["port"] = str(port)
-                    m["flash-id"] = ' '.join(['%02x'%struct.unpack('<B',b) for b in jid])
+                    m["flash-id"] = ' '.join(['%02X'%(b if isinstance(b, int) else struct.unpack('<B',b)) for b in jid])
                     if p.meta.root is None:
                         m["error"] = 'No metadata'
                     meta.append(m)
@@ -394,7 +394,7 @@ try using libusb to connect to boards without a serial driver attached"""
                 fpga = TinyProg(active_port)
                 [start_addr, end_addr] = args.read.split('-')
                 data = fpga.read(int(start_addr,16), int(end_addr,16)-int(start_addr,16))
-                print(' '.join(['%02x'%struct.unpack('<B',b) for b in data]))
+                print(' '.join(['%02x'%(b if isinstance(b, int) else struct.unpack('<B',b)) for b in data]))
                 # hexdump(data)
                 sys.exit(0)
 
