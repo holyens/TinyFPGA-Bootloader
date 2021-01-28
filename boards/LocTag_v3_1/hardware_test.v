@@ -66,21 +66,16 @@ module hardware_test (
     .SCLK()
   );
 
-  assign pin_lt5534_en = 1'b1;
+  wire [3:0] key = {~pin_key_1, ~pin_key_2, ~pin_key_3, ~pin_key_4};
 
-  wire clk_50mhz_o = clk_50mhz & pin_key_1;
+  assign pin_ctrl_1 = (key[0] & clk_50mhz) | key[1];
+  assign pin_lt5534_en = key[2];
+  assign pin_mio_7 = pin_trig ^ key[3];
+  assign pin_mio_8 = pin_adc_cs;
+  assign pin_mio_9 = pin_adc_so; 
+  assign pin_mio_10 = pin_ctrl_1; 
 
-  assign pin_mio_1 = pin_key_1;
-  assign pin_mio_2 = pin_key_2;
-  assign pin_mio_3 = pin_key_3;
-  assign pin_mio_4 = pin_key_4;
-
-  assign pin_mio_7 = clk_50mhz_o;
-  assign pin_mio_8 = clk_50mhz_o;
-  assign pin_mio_9 = clk_50mhz_o;
-  assign pin_mio_10 = clk_50mhz_o;
-
-  assign pin_ctrl_1 = pin_key_2 | clk_50mhz_o;
+  assign {pin_mio_1, pin_mio_2, pin_mio_3, pin_mio_4} = key;
 
   assign pin_adc_clk = pin_clk;
   // keep track of time and location in blink_pattern
@@ -93,6 +88,6 @@ module hardware_test (
   
   // light up the LED according to the pattern
   assign pin_led = t_counter[21];
-  assign pin_adc_cs = t_counter[4];
+  assign pin_adc_cs = t_counter[5];
 
 endmodule
