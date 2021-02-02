@@ -14,14 +14,15 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-PROJ = factory_bootloader
+H_VER = 3_1_2
+PROJ = loctag_$(H_VER)_firmware
 
-PIN_DEF = pins.pcf
+PIN_DEF = pins_$(H_VER).pcf
 DEVICE = up5k
 PKG = sg48
 SEED ?= 20210106
 
-all: factory_bootloader.bin
+all: $(PROJ).bin
 
 %.json: %.v ../../common/*.v 
 	yosys -q -p 'synth_ice40 -top $(basename $@) -json $@' $^
@@ -38,8 +39,8 @@ all: factory_bootloader.bin
 %.bin: %.asc
 	icepack $< $@
 
-factory_bootloader.bin: bootloader.bin hardware_test.bin
-	icemulti -v -o factory_bootloader.bin -a16 -p0 bootloader.bin hardware_test.bin
+$(PROJ).bin: bootloader.bin loctag_test.bin
+	icemulti -v -o $(PROJ).bin -a16 -p0 bootloader.bin loctag_test.bin
 
 %.rpt: %.asc
 	icetime -d $(DEVICE) -mtr $@ $<
@@ -47,15 +48,15 @@ factory_bootloader.bin: bootloader.bin hardware_test.bin
 %_syn.v: %.json
 	yosys -p 'read_json -wideports $^; write_verilog $@'
 
-prog: factory_bootloader.bin
+prog: $(PROJ).bin
 	iceprog $<
 
-sudo-prog: factory_bootloader.bin
+sudo-prog: $(PROJ).bin
 	@echo 'Executing prog as root!!!'
 	sudo iceprog $<
 
 clean:
-	rm -f *.asc *.rpt *.bin *.log bootloader.json hardware_test.json 
+	rm -f *.asc *.rpt *.bin *.log bootloader.json loctag_test.json 
 
 .SECONDARY:
 .PHONY: all prog clean

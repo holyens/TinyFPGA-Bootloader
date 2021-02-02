@@ -3,7 +3,7 @@
 // 1. USB is disabled as unused pin_usb_pu are automatically blocked and the
 //    pull-up termination is disabled ;
 //
-module hardware_test (
+module loctag_test (
   // 16MHz clock input
   input  pin_clk,
   // detector
@@ -88,6 +88,6 @@ module hardware_test (
   
   // light up the LED according to the pattern
   assign pin_led = t_counter[21];
-  assign pin_adc_cs = t_counter[5];
+  assign pin_adc_cs = t_counter[5] | (~key[2]);
 
 endmodule
