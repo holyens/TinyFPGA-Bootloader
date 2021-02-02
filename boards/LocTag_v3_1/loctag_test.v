@@ -66,7 +66,7 @@ module loctag_test (
     .SCLK()
   );
 
-  wire [3:0] key = {~pin_key_1, ~pin_key_2, ~pin_key_3, ~pin_key_4};
+  wire [3:0] key = {~pin_key_4, ~pin_key_3, ~pin_key_2, ~pin_key_1};
 
   assign pin_ctrl_1 = (key[0] & clk_50mhz) | key[1];
   assign pin_lt5534_en = key[2];
@@ -75,7 +75,7 @@ module loctag_test (
   assign pin_mio_9 = pin_adc_so; 
   assign pin_mio_10 = pin_ctrl_1; 
 
-  assign {pin_mio_1, pin_mio_2, pin_mio_3, pin_mio_4} = key;
+  assign {pin_mio_4, pin_mio_3, pin_mio_2, pin_mio_1} = key;
 
   assign pin_adc_clk = pin_clk;
   // keep track of time and location in blink_pattern

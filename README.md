@@ -19,9 +19,17 @@ apio drivers --serial-enable
 ## 构建LocTag USB Bootloader
 ```bash
 git clone git@github.com:holyens/TinyFPGA-Bootloader.git
-cd TinyFPGA-Bootloader/boards/LocTag_v3.1/
-make
+cd TinyFPGA-Bootloader/boards/LocTag_v3.1/ 
+make H_VER=3.1.2
+# save output to file: 
+# make H_VER=3.1.2 > build_3_1_2.log 2>&1 
 ```
+
+make命令的输出中包含了FPGA资源使用情况和关键信号的时序信息。
+
+make成功后将生成可烧写的FPGA镜像文件，其中bootloader.bin为USB引导，loctag_test.bin为测试loctag板子的FPGA配置镜像，loctag_3_1_2_firmware.bin同时包含bootloader.bin和loctag_test.bin的多配置镜像，因此烧写时只需要loctag_3_1_2_firmware.bin文件即可。
+
+loctag上电后将加载内含的bootloader.bin，bootloader.bin在一段超时时间内检测板子是否通过USB连接了PC主机，如果连接了则停留在bootLoader，否则的话将利用ice40UP5K的WARM BOOT功能使用内含的loctag_test.bin重新配置FPGA,此后再想进入bootLoader需要重新插拔电源或按板子上的复位键。
 
 ## LocTag实验板程序烧写
 
@@ -29,12 +37,11 @@ make
 FLASH芯片初次编程时需要使用专门的FLASH烧写工具，最好在将FLASH芯片焊到板子之前就进行烧写：
 1. 准备W25Q64FV FLASH芯片（SOIC-8封装）和FLASH编程器（这里使用在淘宝购买的“USB土豪金编程器”）及编程器附带的烧录软件。
 2. 将W25Q64FV FLASH芯片放置在编程器背面的SOIC位，注意引脚顺序。对准引脚后推荐用透明胶带将芯片固定在编程器上，在需要操作时用手按紧即可。
-3. 将编程器插入电脑，打开烧录软件，选择芯片型号，然后打开生成的factory_bootloader.bin。
+3. 将编程器插入电脑，打开烧录软件，选择芯片型号，然后打开生成的loctag_3_1_2_firmware.bin。
 4. 依次执行擦除、烧写、校验。
-5. 全部成功后取下芯片，将芯片焊到板子上。factory_bootloader.bin。
+5. 全部成功后取下芯片，将芯片焊到板子上。
 
 ### 使用板载USB接口烧写
-烧写的factory_bootloader.bin中包含两组配置，得益于iCE40UP5K的WARM BOOT功能，。
 
 1. 查询信息/读取测试
 ```
@@ -43,11 +50,55 @@ sudo tinyprog -m       # 读取security pages的meta数据和FLASH芯片的JEDEC
 sudo tinyprog -r 0-16  # 读取[0x00,0x16)地址范围内的数据并打印
 ```
 2. 烧录meta文件
+W25Q64FV FLASH提供了少量独立的存储空间，可利用它们存储板子的meta信息，这些meta信息包含板子相关的、tinyprog执行时需要的一些参数，所以在使用tinyprog烧写镜像之前，最好先烧录meta文件。
+
+tinyprog使用的meta文件有两个：bootmeta.json和boardmeta.json，对于每个板子，boardmeta.json中的uuid必须不同（为了使tinyprog能够区分不同的设备），其它可根据需要修改。需要注意的是，由于单个security page的大小256字节，所以meta文件的大小不能超过256字节！
 ```
 sudo tinyprog --security ../boards/LocTag_v3_1/boardmeta.json -a 1
 sudo tinyprog --security ../boards/LocTag_v3_1/bootmeta.json -a 2
 ```
+
 3. 烧录用户程序
+```bash
+tinyprog -i 312.01 -p loctag.bin
+```
+
+4. 烧写bootloader
+```bash
+sudo tinyprog -a 0x00 -p ./loctag_3_1_2_firmware.bin
+```
+警告：如果烧写了不正确bootloader镜像，将导致bootloader的USB烧写功能失效，此时板子将无法再通过USB接口烧写镜像。这种情况下必须重新使用FLASH编程器对板子上的FLASH芯片进行编程，方法有二：（1）取下芯片后实验FLASH编程器烧写（2）将FLASH编程器连接到板子上预留的FLASH SPI接口进行烧写。
+
+使用方法（2）必须满足以下条件：
+- 板子上电
+- 由于FLASH SPI接口也连接到了FPGA的SPI相关引脚，所以需要FPGA相关引脚处于高阻状态（输入或未使用状态，不能是输出状态），否则不仅不能烧写，还有可能损坏芯片。
+可知，无论哪种方法都比较麻烦，所以如无必要，请勿烧写和覆盖FLASH芯片bootloader部分的数据。
+
+5. 从bootloader进入用户配置
+```bash
+tinyprog -b
+```
+
+### loctag_test硬件测试程序
+key_x is high when key_x is on.
+```v
+reg [22:0] t_counter;
+assign {mio_4, mio_3, mio_2, mio_1} = {key_4, key_3, key_2, key_1};
+assign ctrl_1 = (key_1 & clk_50mhz) | key_2;
+assign lt5534_en = key_3;
+assign mio_7 = trig ^ key_4;
+assign mio_8 = adc_cs;
+assign mio_9 = adc_so; 
+assign mio_10 = ctrl_1;
+
+assign adc_clk = clk_16mhz;
+assign adc_cs = t_counter[5] | (~key_3);
+assign led = t_counter[21];
+
+always @(posedge clk_16mhz) begin
+  t_counter <= t_counter + 1;
+end
+```
 
 -------------------------------------------
 

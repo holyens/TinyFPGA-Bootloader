@@ -65,4 +65,13 @@ set_io -nowarn  pin_nc_5       4    # IOB_8A
 set_io -nowarn  pin_nc_6       3    # IOB_9B
 set_io -nowarn  pin_nc_7       44   # IOB_3B_G6
 
+# clock constraint in bootloader
+# set_frequency   pin_clk     16
+# set_frequency   clk_48mhz   48
+# set_frequency   clk_24mhz   24
+# set_frequency   clk_12mhz   12
+
+# clock constraint in loctag_test
+set_frequency   clk_50mhz   50
+
 ## END OF FILE ##
