@@ -10,6 +10,7 @@ module bootloader (
   output pin_flash_si,
   input  pin_flash_so,
 
+  input  pin_key_4,
   output pin_led,
 
   );
@@ -63,7 +64,7 @@ module bootloader (
   SB_WARMBOOT warmboot_inst (
     .S1(1'b0),
     .S0(1'b1),
-    .BOOT(boot)
+    .BOOT(boot | pin_key_4)
   );
 
 /////////////////////////////////////////

@@ -3,20 +3,22 @@
 ## 依赖的软件包 (Ubuntu)：
 1. Python (建议使用Python3，Python2也可)
 
-```bash
-apt-get install python3-dev python3-pip
-pip3 install -U setuptools wheel
-pip3 install -U pyrsistent spacy
-```
+    ```bash
+    apt-get install python3-dev python3-pip
+    pip3 install -U setuptools wheel
+    pip3 install -U pyrsistent spacy
+    ```
 
 2. 适用于iCE40系列FPGA的开源开发套件
-```bash
-pip install apio==0.4.0b5
-apio install system scons icestorm iverilog
-apio drivers --serial-enable
-```
+    ```bash
+    pip install apio==0.4.0b5
+    apio install system scons icestorm iverilog
+    apio drivers --serial-enable
+    ```
 
 ## 构建LocTag USB Bootloader
+
+目录中已经放置了Makefile文件，克隆代码后直接使用make即可（推荐在Linux下进行）,make命令的输出中包含了FPGA资源使用情况和关键信号的时序信息。
 ```bash
 git clone git@github.com:holyens/TinyFPGA-Bootloader.git
 cd TinyFPGA-Bootloader/boards/LocTag_v3.1/ 
@@ -25,11 +27,9 @@ make H_VER=3.1.2
 # make H_VER=3.1.2 > build_3_1_2.log 2>&1 
 ```
 
-make命令的输出中包含了FPGA资源使用情况和关键信号的时序信息。
+make成功后将生成可烧写的FPGA镜像文件，其中bootloader.bin为USB引导，loctag_test.bin为测试loctag板子的FPGA配置镜像（即用户镜像），loctag_3_1_2_firmware.bin同时包含bootloader.bin和loctag_test.bin的多配置镜像，因此烧写时只需要loctag_3_1_2_firmware.bin文件即可。
 
-make成功后将生成可烧写的FPGA镜像文件，其中bootloader.bin为USB引导，loctag_test.bin为测试loctag板子的FPGA配置镜像，loctag_3_1_2_firmware.bin同时包含bootloader.bin和loctag_test.bin的多配置镜像，因此烧写时只需要loctag_3_1_2_firmware.bin文件即可。
-
-loctag上电后将加载内含的bootloader.bin，bootloader.bin在一段超时时间内检测板子是否通过USB连接了PC主机，如果连接了则停留在bootLoader，否则的话将利用ice40UP5K的WARM BOOT功能使用内含的loctag_test.bin重新配置FPGA,此后再想进入bootLoader需要重新插拔电源或按板子上的复位键。
+loctag上电后将加载内含的bootloader.bin，如果拨码开关4处于off，则bootloader利用ice40UP5K的WARM BOOT功能直接从bootloader跳转到用户镜像(严格地说是重新配置)；否则如果开关4处于on状态，则bootloader.bin在一段超时时间内检测板子是否通过USB连接了PC主机，如果连接了则停留在bootloader，否则的话将跳转到用户镜像,此后再想进入bootLoader需要将开关4拨至on状态然后重新插拔电源或按板子上的复位键。
 
 ## LocTag实验板程序烧写
 
@@ -44,40 +44,46 @@ FLASH芯片初次编程时需要使用专门的FLASH烧写工具，最好在将F
 ### 使用板载USB接口烧写
 
 1. 查询信息/读取测试
-```
-sudo tinyprog -l       # 列出所有连接的设备
-sudo tinyprog -m       # 读取security pages的meta数据和FLASH芯片的JEDEC ID
-sudo tinyprog -r 0-16  # 读取[0x00,0x16)地址范围内的数据并打印
-```
+    ```bash
+    sudo tinyprog -l       # 列出所有连接的设备
+    sudo tinyprog -m       # 读取security pages的meta数据和FLASH芯片的JEDEC ID
+    sudo tinyprog -r 0-10  # 读取[0x00,0x10)地址范围内的数据并打印
+    ```
 2. 烧录meta文件
-W25Q64FV FLASH提供了少量独立的存储空间，可利用它们存储板子的meta信息，这些meta信息包含板子相关的、tinyprog执行时需要的一些参数，所以在使用tinyprog烧写镜像之前，最好先烧录meta文件。
+    
+    W25Q64FV FLASH提供了少量独立的存储空间，可利用它们存储板子的meta信息，这些meta信息包含板子相关的、tinyprog执行时需要的一些参数，所以在使用tinyprog烧写镜像之前，最好先烧录meta文件。
 
-tinyprog使用的meta文件有两个：bootmeta.json和boardmeta.json，对于每个板子，boardmeta.json中的uuid必须不同（为了使tinyprog能够区分不同的设备），其它可根据需要修改。需要注意的是，由于单个security page的大小256字节，所以meta文件的大小不能超过256字节！
-```
-sudo tinyprog --security ../boards/LocTag_v3_1/boardmeta.json -a 1
-sudo tinyprog --security ../boards/LocTag_v3_1/bootmeta.json -a 2
-```
+    tinyprog使用的meta文件有两个：bootmeta.json和boardmeta.json，对于每个板子，boardmeta.json中的uuid必须不同（为了使tinyprog能够区分不同的设备），其它可根据需要修改。需要注意的是，由于单个security page的大小256字节，所以meta文件的大小不能超过256字节！
+    ```bash
+    sudo tinyprog --security ../boards/LocTag_v3_1/boardmeta.json -a 1
+    sudo tinyprog --security ../boards/LocTag_v3_1/bootmeta.json -a 2
+    ```
 
-3. 烧录用户程序
-```bash
-tinyprog -i 312.01 -p loctag.bin
-```
+3. 烧录用户镜像
+    
+    烧写用户镜像不会覆盖bootloader，默认tinyprog将读取flash存储器安全页中的bootmeta.json的地址配置，作为用户镜像的烧写地址。
+    ```bash
+    tinyprog -i 312.01 -p loctag.bin # 312.01为板子的uuid
+    ```
 
 4. 烧写bootloader
-```bash
-sudo tinyprog -a 0x00 -p ./loctag_3_1_2_firmware.bin
-```
-警告：如果烧写了不正确bootloader镜像，将导致bootloader的USB烧写功能失效，此时板子将无法再通过USB接口烧写镜像。这种情况下必须重新使用FLASH编程器对板子上的FLASH芯片进行编程，方法有二：（1）取下芯片后实验FLASH编程器烧写（2）将FLASH编程器连接到板子上预留的FLASH SPI接口进行烧写。
 
-使用方法（2）必须满足以下条件：
-- 板子上电
-- 由于FLASH SPI接口也连接到了FPGA的SPI相关引脚，所以需要FPGA相关引脚处于高阻状态（输入或未使用状态，不能是输出状态），否则不仅不能烧写，还有可能损坏芯片。
-可知，无论哪种方法都比较麻烦，所以如无必要，请勿烧写和覆盖FLASH芯片bootloader部分的数据。
+    **！！！谨慎操作！！！**
+    ```bash
+    sudo tinyprog -a 0x00 -p ./loctag_3_1_2_firmware.bin
+    ```
+    警告！！！如果烧写了不正确bootloader镜像，将导致bootloader的USB烧写功能失效，此时板子将无法再通过USB接口烧写镜像。这种情况下必须重新使用FLASH编程器对板子上的FLASH芯片进行编程，方法有二：（1）取下芯片后使用FLASH编程器烧写，步骤与前面所讲的初次烧写bootloader程序的步骤相同；（2）将FLASH编程器连接到板子上预留的FLASH SPI接口进行烧写。
+
+    使用方法（2）必须满足以下条件：
+    - 板子上电
+    - 由于FLASH SPI接口也连接到了FPGA的SPI相关引脚，所以需要FPGA相关引脚处于高阻状态（输入或未使用状态，不能是输出状态），否则不仅不能烧写，还有可能损坏芯片。
+      
+    经验证，方法（2）无法使用前述的“USB土豪金编程器”烧写程序，但是可以使用另一块未焊接flash芯片、烧录了usb bootloader的loctag板子进行烧写。大致流程是先使用排线将烧写有bootloader的flash芯片接到未焊接flash芯片的loctag板子的SPI预留接口，等待该板子加载bootloader并被主机USB识别后，拔掉flash芯片，并将用排线将该板子与待烧写的板子的SPI预留接口对接，然后使用上述命令烧写无问题的bootloader。可知，无论哪种方法都比较麻烦，所以如无必要，请勿烧写和覆盖FLASH芯片bootloader部分的数据。
 
 5. 从bootloader进入用户配置
-```bash
-tinyprog -b
-```
+  ```bash
+  tinyprog -b
+  ```
 
 ### loctag_test硬件测试程序
 key_x is high when key_x is on.
@@ -100,7 +106,7 @@ always @(posedge clk_16mhz) begin
 end
 ```
 
--------------------------------------------
+--------------------------------------- 分割线 -------------------------------------------
 
 # The TinyFPGA USB Bootloader
 The TinyFPGA USB Bootloader is an open source IP for programming FPGAs without extra USB interface chips.  It implements a USB virtual serial port to SPI flash bridge on the FPGA fabric itself.  For FPGAs that support loading multiple configurations it is possible for the bootloader to be completely unloaded from the FPGA before the user configuration is loaded in.  
